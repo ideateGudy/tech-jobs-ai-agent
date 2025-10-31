@@ -3,7 +3,7 @@ import { z } from 'zod';
 import axios from 'axios';
 import { parseFeed } from '@rowanmanning/feed-parser';
 import { rssFeeds } from '../data/rss-feeds.js';
-import { extractKeywords } from '../../utils/keyword-extractor.js';
+import { extractKeywords } from '../utils/keyword-extractor.ts';
 
 console.log('Using RSS Tool from src/mastra/tools/rss-tool.ts');
 
