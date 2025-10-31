@@ -1,11 +1,9 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
-import axios from 'axios';
-import { parseFeed } from '@rowanmanning/feed-parser';
 import { rssFeeds } from '../data/rss-feeds.js';
-import { extractKeywords } from '../utils/keyword-extractor.ts';
+import { extractKeywords } from '../utils/keyword-extractor.js';
+import { fetchFeedWithCache, deduplicateJobs } from '../utils/feed-cache.ts';
 
-console.log('Using RSS Tool from src/mastra/tools/rss-tool.ts');
 
 const jobListingSchema = z.object({
   title: z.string(),
@@ -31,14 +29,13 @@ export const rssTool = createTool({
     const { query, limit } = context;
     const keywords = extractKeywords(query);
     
-    console.log(`\n${'='.repeat(80)}`);
-    console.log(`🔍 RSS Tool Called:`);
+    console.log(`\n🔍 RSS Tool Execution`);
     console.log(`   Query: "${query}"`);
-    console.log(`   Extracted keywords: ${JSON.stringify(keywords)}`);
     console.log(`   Limit: ${limit}`);
+    console.log(`   Extracted keywords: [${keywords.join(', ')}]`);
     
     if (keywords.length === 0) {
-      console.log(`❌ No keywords extracted (all stopwords?)`);
+      console.log(`   ⚠️ No keywords extracted from query!`);
       return {
         jobs: [],
         total: 0,
@@ -46,59 +43,43 @@ export const rssTool = createTool({
       };
     }
 
-    const allJobs: z.infer<typeof jobListingSchema>[] = [];
+    let allJobs: Array<{ title: string; link: string; description: string; pubDate: string | undefined; source: string }> = [];
 
-    // Fetch and parse each RSS feed
+    console.log(`   📡 Loading ${rssFeeds.length} feeds from cache...`);
+    // Fetch from cache (no more live fetching in execute)
     for (const feedUrl of rssFeeds) {
       try {
-        console.log(`\n📡 Fetching: ${feedUrl}`);
-        const response = await axios.get(feedUrl, {
-          timeout: 5000,
-        });
-
-        const feed = await parseFeed(response.data);
-        console.log(`   ✓ Got ${feed.items?.length || 0} items from feed`);
-
-        // Extract items from feed
-        if (feed.items && Array.isArray(feed.items)) {
-          let feedMatches = 0;
-          for (const item of feed.items) {
-            const title = (item.title || '').toLowerCase();
-            const description = (item.description || '').toLowerCase();
-            const fullText = `${title} ${description}`;
-
-            // Check if any keyword matches in title (higher priority) or description
-            const titleMatches = keywords.filter(keyword => title.includes(keyword));
-            const descriptionMatches = keywords.filter(keyword => description.includes(keyword));
-            const totalMatches = titleMatches.length + descriptionMatches.length;
-
-            // Include if at least one keyword matches
-            if (totalMatches > 0) {
-              feedMatches++;
-              console.log(`   ✅ Match #${feedMatches}: "${title.substring(0, 60)}..." (${titleMatches.length} in title, ${descriptionMatches.length} in desc)`);
-              allJobs.push({
-                title: item.title || 'No title',
-                link: item.url || '',
-                description: item.description?.substring(0, 300) || 'No description',
-                pubDate: item.published ? item.published.toISOString() : undefined,
-                source: feedUrl,
-              });
-            }
-          }
-          console.log(`   Found ${feedMatches} matches in this feed`);
-        }
+        const feedJobs = await fetchFeedWithCache(feedUrl);
+        console.log(`      ✅ ${feedUrl}: ${feedJobs.length} jobs`);
+        allJobs = allJobs.concat(feedJobs);
       } catch (error) {
-        console.error(`   ❌ Error: ${error instanceof Error ? error.message : String(error)}`);
-        // Continue with next feed on error
+        console.error(`      ❌ Error loading ${feedUrl}:`, error instanceof Error ? error.message : String(error));
       }
     }
-
-    console.log(`\n📊 Summary:`);
-    console.log(`   Total jobs found: ${allJobs.length}`);
-    console.log(`   Limit requested: ${limit}`);
     
+    console.log(`   📊 Total jobs from all feeds: ${allJobs.length}`);
+
+
+    // Deduplicate by URL
+    const uniqueJobs = deduplicateJobs(allJobs);
+    console.log(`   🔗 After deduplication: ${uniqueJobs.length} unique jobs`);
+
+    // Filter by keywords
+    const matchedJobs = uniqueJobs.filter(job => {
+      const title = (job.title || '').toLowerCase();
+      const description = (job.description || '').toLowerCase();
+      
+      const titleMatches = keywords.filter(kw => title.includes(kw)).length;
+      const descMatches = keywords.filter(kw => description.includes(kw)).length;
+      
+      return (titleMatches + descMatches) > 0;
+    });
+    
+    console.log(`   🎯 After keyword filter: ${matchedJobs.length} matched jobs`);
+
+
     // Score jobs by relevance: prefer title matches > description matches
-    const scoredJobs = allJobs.map(job => {
+    const scoredJobs = matchedJobs.map(job => {
       const title = (job.title || '').toLowerCase();
       const description = (job.description || '').toLowerCase();
       
@@ -132,9 +113,8 @@ export const rssTool = createTool({
       .slice(0, limit)
       .map(({ relevanceScore, titleMatches, descMatches, ...job }) => job); // Remove scoring fields
 
-    console.log(`   Returning: ${sortedJobs.length} results (sorted by relevance, then date)`);
-    console.log(`${'='.repeat(80)}\n`);
-
+    console.log(`   ✨ Final results: ${sortedJobs.length} jobs returned (limit: ${limit})`);
+    console.log(`✅ RSS Tool complete\n`);
     return {
       jobs: sortedJobs,
       total: sortedJobs.length,
