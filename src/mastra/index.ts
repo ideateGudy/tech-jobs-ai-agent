@@ -3,12 +3,15 @@ import { Mastra } from '@mastra/core/mastra';
 import { PinoLogger } from '@mastra/loggers';
 import { LibSQLStore } from '@mastra/libsql';
 import { weatherWorkflow } from './workflows/weather-workflow.js';
+import { jobsWorkflow } from './workflows/jobs-workflow.js';
 import { weatherAgent } from './agents/weather-agent.js';
 import { jobsAgent } from './agents/jobs-agent.js';
 import { toolCallAppropriatenessScorer, completenessScorer, translationScorer } from './scorers/weather-scorer.js';
+import { a2aAgentRoute } from './routes/a2a-agent-route.js';
+import { startFeedScheduler } from './utils/feed-scheduler.ts';
 
 export const mastra = new Mastra({
-  workflows: { weatherWorkflow },
+  workflows: { weatherWorkflow, jobsWorkflow },
   agents: { weatherAgent, jobsAgent },
   scorers: { toolCallAppropriatenessScorer, completenessScorer, translationScorer },
   storage: new LibSQLStore({
@@ -28,6 +31,19 @@ export const mastra = new Mastra({
     default: { enabled: true }, 
   },
   bundler: {
-    externals: ['axios', '@rowanmanning/feed-parser'],
+    externals: ['axios', '@rowanmanning/feed-parser', 'node-cron'],
   },
+  server: {
+    build: {
+      openAPIDocs: true,
+      swaggerUI: true,
+    },
+    apiRoutes: [a2aAgentRoute]
+  }
 });
+
+// Register A2A route
+
+// Start the feed scheduler on initialization
+// Refreshes all feeds every 30 minutes
+startFeedScheduler(30);

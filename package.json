@@ -7,7 +7,12 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "mastra dev",
     "build": "mastra build",
-    "start": "mastra start"
+    "start": "mastra start",
+    "cache:status": "node src/utils/cache-cli.ts status",
+    "cache:refresh": "node src/utils/cache-cli.ts refresh",
+    "cache:clear": "node src/utils/cache-cli.ts clear",
+    "scheduler:start": "node src/utils/cache-cli.ts scheduler-start",
+    "scheduler:stop": "node src/utils/cache-cli.ts scheduler-stop"
   },
   "keywords": [],
   "author": "",
@@ -24,6 +29,8 @@
     "@mastra/memory": "^0.15.10",
     "@rowanmanning/feed-parser": "^2.1.1",
     "axios": "^1.13.1",
+    "natural": "^8.1.0",
+    "node-cron": "^4.2.1",
     "zod": "^4.1.12"
   },
   "devDependencies": {
