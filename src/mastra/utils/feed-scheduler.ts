@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import { rssFeeds } from '../data/rss-feeds.ts';
+import { rssFeeds } from '../data/rss-feeds.js';
 import { fetchFeedWithCache } from './feed-cache.js';
 
 let isSchedulerActive = false;

@@ -7,3 +7,5 @@ dist
 *.db 
 *.db-*
 .github/**
+.cache/
+.vscode/

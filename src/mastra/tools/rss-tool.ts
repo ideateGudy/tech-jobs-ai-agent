@@ -2,7 +2,7 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { rssFeeds } from '../data/rss-feeds.js';
 import { extractKeywords } from '../utils/keyword-extractor.js';
-import { fetchFeedWithCache, deduplicateJobs } from '../utils/feed-cache.ts';
+import { fetchFeedWithCache, deduplicateJobs } from '../utils/feed-cache.js';
 
 
 const jobListingSchema = z.object({
