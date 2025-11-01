@@ -27,3 +27,60 @@ export function extractKeywords(input: string): string[] {
 
   return [...new Set(words)]; // remove duplicates
 }
+
+/**
+ * Extracts a numeric limit from user text (e.g., "find 5 latest" -> 5).
+ * Returns undefined if not found.
+ */
+export function extractLimit(input: string): number | undefined {
+  if (!input) return undefined;
+  const m = input.match(/\b(\d{1,3})\b/);
+  if (m && m[1]) return Number(m[1]);
+
+  // Handle common words like "one", "two", "three" up to ten
+  const wordToNum: Record<string, number> = {
+    one: 1,
+    two: 2,
+    three: 3,
+    four: 4,
+    five: 5,
+    six: 6,
+    seven: 7,
+    eight: 8,
+    nine: 9,
+    ten: 10,
+  };
+  const tokens = input.toLowerCase().split(/\s+/);
+  for (const t of tokens) {
+    if (wordToNum[t]) return wordToNum[t];
+  }
+
+  return undefined;
+}
+
+/**
+ * Extracts a candidate location string from user text (e.g., "in London", "remote").
+ * Returns undefined if not found.
+ */
+export function extractLocation(input: string): string | undefined {
+  if (!input) return undefined;
+  const lower = input.toLowerCase();
+  if (lower.includes('remote')) return 'remote';
+
+  const m = lower.match(/\bin\s+([a-z0-9 .,-]+)/i);
+  if (m && m[1]) return m[1].trim();
+  return undefined;
+}
+
+/**
+ * Extracts a seniority level from user text (e.g., senior, junior, mid).
+ */
+export function extractLevel(input: string): string | undefined {
+  if (!input) return undefined;
+  const lower = input.toLowerCase();
+  const levels = ['intern', 'junior', 'mid', 'senior', 'lead', 'principal'];
+  for (const l of levels) {
+    if (lower.includes(l)) return l;
+  }
+  return undefined;
+}

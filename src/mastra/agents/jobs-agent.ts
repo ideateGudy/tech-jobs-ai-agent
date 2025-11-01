@@ -2,6 +2,7 @@ import { Agent } from '@mastra/core/agent';
 import { Memory } from '@mastra/memory';
 import { LibSQLStore } from '@mastra/libsql';
 import { rssTool } from '../tools/rss-tool.js';
+import { scorers } from '../scorers/jobs-scorer.js';
 
 // An AI agent that fetches the most recent remote or tech-related job postings from free public rss feeds. Users can query it like: Find 5 latest Flutter jobs or Show backend developer roles.
 export const jobsAgent = new Agent({
@@ -33,7 +34,22 @@ Example:
 
   model: 'openai/gpt-4o-mini',
   tools: { rssTool },
-  scorers: {},
+  scorers: {
+    jobsQuality: {
+      scorer: scorers.jobsScorer,
+      sampling: {
+        type: 'ratio',
+        rate: 1,
+      },
+    },
+    keywordRelevance: {
+      scorer: scorers.keywordRelevanceScorer,
+      sampling: {
+        type: 'ratio',
+        rate: 1,
+      },
+    },
+  },
   memory: new Memory({
     storage: new LibSQLStore({
       url: 'file:../mastra.db', // path is relative to the .mastra/output directory

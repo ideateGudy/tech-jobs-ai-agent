@@ -29,13 +29,8 @@ export const rssTool = createTool({
     const { query, limit } = context;
     const keywords = extractKeywords(query);
     
-    console.log(`\n🔍 RSS Tool Execution`);
-    console.log(`   Query: "${query}"`);
-    console.log(`   Limit: ${limit}`);
-    console.log(`   Extracted keywords: [${keywords.join(', ')}]`);
     
     if (keywords.length === 0) {
-      console.log(`   ⚠️ No keywords extracted from query!`);
       return {
         jobs: [],
         total: 0,
@@ -45,24 +40,19 @@ export const rssTool = createTool({
 
     let allJobs: Array<{ title: string; link: string; description: string; pubDate: string | undefined; source: string }> = [];
 
-    console.log(`   📡 Loading ${rssFeeds.length} feeds from cache...`);
     // Fetch from cache (no more live fetching in execute)
     for (const feedUrl of rssFeeds) {
       try {
         const feedJobs = await fetchFeedWithCache(feedUrl);
-        console.log(`      ✅ ${feedUrl}: ${feedJobs.length} jobs`);
         allJobs = allJobs.concat(feedJobs);
       } catch (error) {
-        console.error(`      ❌ Error loading ${feedUrl}:`, error instanceof Error ? error.message : String(error));
       }
     }
     
-    console.log(`   📊 Total jobs from all feeds: ${allJobs.length}`);
 
 
     // Deduplicate by URL
     const uniqueJobs = deduplicateJobs(allJobs);
-    console.log(`   🔗 After deduplication: ${uniqueJobs.length} unique jobs`);
 
     // Filter by keywords
     const matchedJobs = uniqueJobs.filter(job => {
@@ -75,7 +65,6 @@ export const rssTool = createTool({
       return (titleMatches + descMatches) > 0;
     });
     
-    console.log(`   🎯 After keyword filter: ${matchedJobs.length} matched jobs`);
 
 
     // Score jobs by relevance: prefer title matches > description matches
@@ -113,8 +102,6 @@ export const rssTool = createTool({
       .slice(0, limit)
       .map(({ relevanceScore, titleMatches, descMatches, ...job }) => job); // Remove scoring fields
 
-    console.log(`   ✨ Final results: ${sortedJobs.length} jobs returned (limit: ${limit})`);
-    console.log(`✅ RSS Tool complete\n`);
     return {
       jobs: sortedJobs,
       total: sortedJobs.length,

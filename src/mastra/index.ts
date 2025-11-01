@@ -2,18 +2,16 @@
 import { Mastra } from '@mastra/core/mastra';
 import { PinoLogger } from '@mastra/loggers';
 import { LibSQLStore } from '@mastra/libsql';
-import { weatherWorkflow } from './workflows/weather-workflow.js';
 import { jobsWorkflow } from './workflows/jobs-workflow.js';
-import { weatherAgent } from './agents/weather-agent.js';
 import { jobsAgent } from './agents/jobs-agent.js';
-import { toolCallAppropriatenessScorer, completenessScorer, translationScorer } from './scorers/weather-scorer.js';
+import { jobsScorer, keywordRelevanceScorer } from './scorers/jobs-scorer.js';
 import { a2aAgentRoute } from './routes/a2a-agent-route.js';
-import { startFeedScheduler } from './utils/feed-scheduler.ts';
+import { startFeedScheduler } from './utils/feed-scheduler.js';
 
 export const mastra = new Mastra({
-  workflows: { weatherWorkflow, jobsWorkflow },
-  agents: { weatherAgent, jobsAgent },
-  scorers: { toolCallAppropriatenessScorer, completenessScorer, translationScorer },
+  workflows: {  jobsWorkflow },
+  agents: {  jobsAgent },
+  scorers: { jobsScorer, keywordRelevanceScorer },
   storage: new LibSQLStore({
     // stores observability, scores, ... into memory storage, if it needs to persist, change to file:../mastra.db
     url: ":memory:",
@@ -31,7 +29,7 @@ export const mastra = new Mastra({
     default: { enabled: true }, 
   },
   bundler: {
-    externals: ['axios', '@rowanmanning/feed-parser', 'node-cron'],
+    externals: ['axios', '@rowanmanning/feed-parser', 'node-cron', 'natural'],
   },
   server: {
     build: {

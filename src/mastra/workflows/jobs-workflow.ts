@@ -38,27 +38,20 @@ const searchJobs = createStep({
     // Call the jobs agent with the search query
     const response = await agent.generate(query);
     
-    console.log(`\n📋 SearchJobs Step Execution`);
-    console.log(`   Query: "${query}"`);
-    console.log(`   Agent Response keys:`, Object.keys(response));
-    console.log(`   Response:`, JSON.stringify(response, null, 2).substring(0, 500));
 
     // Parse the tool results from the response
     let jobs = [];
     let total = 0;
 
     if (response.toolResults && response.toolResults.length > 0) {
-      console.log(`   📊 Found ${response.toolResults.length} tool results`);
       // Extract job results from tool output
       const toolResult = response.toolResults[0];
-      console.log(`   Tool result type:`, typeof toolResult);
       
       if (typeof toolResult === 'string') {
         try {
           const parsed = JSON.parse(toolResult);
           jobs = parsed.jobs || [];
           total = parsed.total || jobs.length;
-          console.log(`   ✅ Parsed string: ${jobs.length} jobs found`);
         } catch (e) {
           console.error('   ❌ Failed to parse tool results:', e);
         }
@@ -68,26 +61,23 @@ const searchJobs = createStep({
         
         if ((toolResult as any).payload?.result?.jobs) {
           jobData = (toolResult as any).payload.result;
-          console.log(`   ✅ Found jobs in payload.result.jobs`);
         } else if ((toolResult as any).jobs) {
           jobData = toolResult as any;
-          console.log(`   ✅ Found jobs in top-level`);
         } else {
-          console.log(`   ⚠️ Jobs not found in expected locations`);
-          console.log(`   Tool result structure:`, JSON.stringify(toolResult, null, 2).substring(0, 500));
+          console.info(`   ⚠️ Jobs not found in expected locations`);
+          console.info(`   Tool result structure:`, JSON.stringify(toolResult, null, 2).substring(0, 500));
         }
         
         if (jobData) {
           jobs = jobData.jobs || [];
           total = jobData.total || jobs.length;
-          console.log(`   ✅ Extracted: ${jobs.length} jobs found`);
         }
       }
     } else {
-      console.log(`   ⚠️ No tool results found in response`);
+      console.info(`   ⚠️ No tool results found in response`);
     }
 
-    console.log(`   ✨ Final output: ${jobs.length} jobs, limit: ${limit}\n`);
+    console.info(`   ✨ Final output: ${jobs.length} jobs, limit: ${limit}\n`);
 
     return {
       jobs: jobs.slice(0, limit),
