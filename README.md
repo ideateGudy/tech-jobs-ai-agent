@@ -208,29 +208,21 @@ MASTRA_CLOUD_ACCESS_TOKEN=...  # For cloud tracing (optional)
 
 ## 📁 Project Structure
 
-```
-tech-jobs/
-├── src/
-│   ├── mastra/
-│   │   ├── index.ts                 # Main Mastra config
-│   │   ├── agents/
-│   │   │   ├── jobs-agent.ts        # Jobs agent definition
-│   │   │   └── weather-agent.ts     # Weather agent (example)
-│   │   ├── tools/
-│   │   │   ├── rss-tool.ts          # RSS fetching & parsing tool
-│   │   │   └── weather-tool.ts      # Weather tool (example)
-│   │   ├── workflows/
-│   │   │   └── weather-workflow.ts  # Workflow example
-│   │   └── scorers/
-│   │       └── weather-scorer.ts    # Scorer examples
-│   ├── data/
-│   │   └── rss-feeds.ts             # RSS feed URLs
-│   └── utils/
-│       └── keyword-extractor.ts     # Keyword extraction logic
-├── package.json
-├── tsconfig.json
-├── test-jobs-agent.js               # API test script
-└── README.md                         # This file
+```text
+src/mastra/
+├── agents/
+│   └── jobs-agent.ts       ← The agent + its instructions
+├── tools/
+│   └── rss-tool.ts         ← The "search jobs" tool
+├── workflows/
+│   └── jobs-workflow.ts    ← Compose steps that use the agent
+├── utils/
+│   ├── keyword-extractor.ts   ← Parse "Find 5 Flutter jobs"
+│   ├── feed-cache.ts          ← Cache RSS data locally
+│   └── feed-scheduler.ts      ← Auto-refresh feeds every 30 min
+├── scorers/
+│   └── jobs-scorer.ts      ← Grade agent responses
+└── index.ts                ← Wire it all together
 ```
 
 ---
