@@ -67,17 +67,30 @@ export const a2aAgentRoute = registerApiRoute('/a2a/agent/:agentId', {
         messagesList = messages;
       }
 
-      // Convert A2A messages to Mastra format (concatenate all message content)
-      const messageContent = messagesList
-        .map((msg: A2AMessage) => {
-          return msg.parts?.map((part: A2APart) => {
+      // Convert A2A messages to Mastra format.
+      // Use only the most recent user message to avoid prior agent outputs
+      // contaminating keyword extraction (previous agent outputs often
+      // contained "Flutter" which made flutter match every query).
+      let messageContent = '';
+      if (messagesList.length > 0) {
+        // Find the last user message; fall back to the last message if none
+        const lastUser = [...messagesList].reverse().find((m: A2AMessage) => m.role === 'user');
+        const parts = (lastUser || messagesList[messagesList.length - 1]).parts || [];
+
+        messageContent = parts
+          .map((part: A2APart) => {
             if (part.kind === 'text') return part.text || '';
-            if (part.kind === 'data') return JSON.stringify(part.data);
+            if (part.kind === 'data') {
+              if (Array.isArray(part.data)) {
+                return (part.data as any[]).map(p => (p && (p as any).text ? (p as any).text : JSON.stringify(p))).join('\n');
+              }
+              return JSON.stringify(part.data);
+            }
             return '';
-          }).join('\n') || '';
-        })
-        .join('\n\n')
-        .trim();
+          })
+          .join('\n')
+          .trim();
+      }
 
       // Execute agent with message as string
       const response = await agent.generate(messageContent);
